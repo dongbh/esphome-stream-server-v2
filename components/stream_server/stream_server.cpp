@@ -68,6 +68,17 @@ void StreamServerComponent::accept() {
     if (!socket)
         return;
 
+    // drop previous connections
+    for (Client& client : this->clients_)
+        client.disconnected = true;
+    // clear uart buffer
+    char buf[128];
+    int len;
+    while ((len = this->stream_->available()) > 0) {
+        len = std::min(len, 128);
+        this->stream_->read_array(reinterpret_cast<uint8_t*>(buf), len);
+    }
+
     socket->setblocking(false);
     std::string identifier = socket->getpeername();
     this->clients_.emplace_back(std::move(socket), identifier);
